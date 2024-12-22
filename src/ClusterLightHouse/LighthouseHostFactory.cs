@@ -7,10 +7,15 @@ namespace ClusterLightHouse
 {
     public class LighthouseHostFactory
     {
+        private const string ActorSystemName = "FireAlert";
+        private const string CLUSTER_PORT = "4053";
+        private const string CLUSTER_IP = "mikehpvictuslaptop";
+        private const string CLUSTER_SEEDS = ""; //""[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]";
+        
         public static ActorSystem LaunchLighthouse(string ipAddress = null, int? specifiedPort = null, string systemName = null)
         {
-            systemName = systemName ?? Environment.GetEnvironmentVariable("ACTORSYSTEM")?.Trim();
-            ipAddress = ipAddress ?? Environment.GetEnvironmentVariable("CLUSTER_IP")?.Trim();
+            systemName = systemName ?? Environment.GetEnvironmentVariable("ACTORSYSTEM")?.Trim() ?? ActorSystemName;
+            ipAddress = ipAddress ?? Environment.GetEnvironmentVariable("CLUSTER_IP")?.Trim() ?? CLUSTER_IP;
             if (specifiedPort == null)
             {
                 var envPort = Environment.GetEnvironmentVariable("CLUSTER_PORT")?.Trim();
@@ -50,7 +55,7 @@ namespace ClusterLightHouse
             selfAddress = new Address("akka.tcp", systemName, ipAddress.Trim(), port).ToString();
             Console.WriteLine("[Lighthouse] Parse successful.");
 
-            var clusterSeeds = Environment.GetEnvironmentVariable("CLUSTER_SEEDS")?.Trim();
+            var clusterSeeds = Environment.GetEnvironmentVariable("CLUSTER_SEEDS")?.Trim() ?? CLUSTER_SEEDS;
 
             var seeds = clusterConfig.GetStringList("akka.cluster.seed-nodes").ToList();
             if (!string.IsNullOrEmpty(clusterSeeds))

@@ -1,6 +1,9 @@
 ﻿using ClusterLightHouse;
 var par = args.ToList();
-var lighthouseService = new LighthouseService(actorSystemName: Environment.GetEnvironmentVariable("ACTORSYSTEM"));
+
+string ActorSystemName = "FireAlert";
+
+var lighthouseService = new LighthouseService(actorSystemName: Environment.GetEnvironmentVariable("ACTORSYSTEM") ?? ActorSystemName);
 lighthouseService.Start();
 
 Console.WriteLine("Press Control + C to terminate.");

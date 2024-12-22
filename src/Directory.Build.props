@@ -16,7 +16,7 @@
 		<None Include="$(MSBuildThisFileDirectory)\..\README.md" Pack="true" Visible="false" PackagePath="\" />
 	</ItemGroup>
   <PropertyGroup>
-    <NetCoreFramework>net6.0</NetCoreFramework>
+    <NetCoreFramework>net9.0</NetCoreFramework>
     <NBenchVersion>1.2.2</NBenchVersion>
     <XunitVersion>2.4.1</XunitVersion>
     <TestSdkVersion>17.3.2</TestSdkVersion>

@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Configuration;
 using Microsoft.Extensions.Hosting;
 using Akka.Streams;
 
@@ -14,13 +15,24 @@ namespace KinesisProducer
 
         private readonly ActorSystem _system;
         private readonly IMaterializer _materializer;
+        private const string ActorSystemName = "FireAlert";
+
+        private const string Sensors = "30.667222,-97.643056,d123"; //"30.667222,-97.643056,d123;32.15,-97.933333,d2457;31.159167,-106.288611,d0iu";
+        // ACTORSYSTEM: "FireAlert"
+        // streamName: "fire-alert"
+        // CLUSTER_SEEDS: "[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]"
         public AkkaService(IServiceProvider serviceProvider, IHostApplicationLifetime appLifetime)
         {
             _serviceProvider = serviceProvider;
             _applicationLifetime = appLifetime;
             var vrs = Environment.GetEnvironmentVariables();
-            var sensors = vrs["sensors"]?.ToString().Split(";").ToList();
-            _system = ActorSystem.Create(vrs["ACTORSYSTEM"]?.ToString());
+            var sensors = (vrs["sensors"]?.ToString() ?? Sensors).Split(";").ToList();
+            
+            
+            var config = ConfigurationFactory.ParseString(File.ReadAllText("producer.hocon"));
+
+            _system = ActorSystem.Create((vrs["ACTORSYSTEM"]?.ToString() ?? ActorSystemName), config);
+            
             _materializer = _system.Materializer();
             foreach(var sensor in sensors)
             {

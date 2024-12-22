@@ -1,0 +1,45 @@
+
+lighthouse {
+  actorsystem: "FireAlert" # POPULATE NAME OF YOUR ACTOR SYSTEM HERE
+}
+
+# See petabridge.cmd configuration options here: https://cmd.petabridge.com/articles/install/host-configuration.html
+petabridge.cmd {
+	# default IP address used to listen for incoming petabridge.cmd client connections
+	# should be a safe default as it listens on "all network interfaces".
+	host = "0.0.0.0"
+
+	# default port number used to listen for incoming petabridge.cmd client connections
+	port = 9110
+}
+
+akka {
+    kafka {    
+        producer {
+          # Tuning parameter of how many sends that can run in parallel.
+          parallelism = 100
+        
+          # How long to wait for `Producer.Flush`
+           flush-timeout = 10s
+           
+           # Fully qualified config path which holds the dispatcher configuration
+           # to be used by the producer stages. Some blocking may occur.
+           # When this value is empty, the dispatcher configured for the stream
+           # will be used.
+           use-dispatcher = "akka.kafka.default-dispatcher"
+           
+           # Properties defined by Confluent.Kafka.ProducerConfig
+           # can be defined in this configuration section.
+           kafka-clients {
+              bootstrap.servers = "localhost:19092"
+              client.id = client-1
+              group.id = group-1
+           }
+        }
+                   
+        default-dispatcher {
+            type = Dispatcher
+            throughput = 100
+        }
+    }
+}
