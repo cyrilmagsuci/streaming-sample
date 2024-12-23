@@ -95,7 +95,7 @@ namespace KinesisSample
            
             var aggregator = ClusterSystem.ActorOf(AggregatorActor.Prop(ClusterSystem));
             
-            var consumerSettings = ConsumerSettings<Null, SensorData>.Create(ClusterSystem, null, null)
+            var consumerSettings = ConsumerSettings<Null, SensorData>.Create(ClusterSystem, null, new SensorDataDeserializer())
                 .WithBootstrapServers("localhost:19092")
                 .WithGroupId("group-1")
                 .WithProperty("security.protocol", "PLAINTEXT")

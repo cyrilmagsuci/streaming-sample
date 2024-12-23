@@ -10,7 +10,10 @@ namespace ClusterLightHouse
         private const string ActorSystemName = "FireAlert";
         private const string CLUSTER_PORT = "4053";
         private const string CLUSTER_IP = "mikehpvictuslaptop";
-        private const string CLUSTER_SEEDS = ""; //""[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]";
+        //private const string CLUSTER_IP = "127.0.0.1";
+       // private const string CLUSTER_SEEDS = "[akka.tcp://FireAlert@127.0.0.1:4053,akka.tcp://FireAlert@light-house-2:4054]"; //""[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]";
+        //private const string CLUSTER_SEEDS = "[akka.tcp://FireAlert@mikehpvictuslaptop:4053,akka.tcp://FireAlert@127.0.0.1:4053,akka.tcp://FireAlert@light-house-2:4054]"; //""[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]";
+        private const string CLUSTER_SEEDS = "[akka.tcp://FireAlert@mikehpvictuslaptop:4053]"; //""[akka.tcp://FireAlert@light-house-1:4053,akka.tcp://FireAlert@light-house-2:4054]";
         
         public static ActorSystem LaunchLighthouse(string ipAddress = null, int? specifiedPort = null, string systemName = null)
         {
