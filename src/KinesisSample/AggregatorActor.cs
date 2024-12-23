@@ -14,10 +14,22 @@ namespace KinesisSample
         private readonly IActorRef _clusterProxy;
         private readonly int _alertThreshold;
         private readonly ILoggingAdapter _log;
+        private int _threshold = 120;
+        
+        /*
+         * ENV streamName="fire-alert"
+ENV FIRE_DEPARTMENT="Texas"
+ENV accessKey=""
+ENV accessSecret=""
+ENV threshold="120"
+
+         */
+        
+        
         public AggregatorActor(ActorSystem system)
         {
             _log = Context.GetLogger();
-            _alertThreshold = int.Parse(Environment.GetEnvironmentVariable("threshold"));
+            _alertThreshold = int.Parse(Environment.GetEnvironmentVariable("threshold") ?? _threshold.ToString());
             var sharding = ClusterSharding.Get(system);
 
             _clusterProxy = sharding.StartProxy(

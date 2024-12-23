@@ -10,17 +10,20 @@ using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System;
 using Akka.DependencyInjection;
-using Amazon.Kinesis;
-using Akka.Streams.Kinesis;
+// using Amazon.Kinesis;
+// using Akka.Streams.Kinesis;
 using Akka.Streams;
-using Amazon.Runtime;
-using Amazon;
+// using Amazon.Runtime;
+// using Amazon;
 using Akka.Streams.Dsl;
 using System.Text.Json;
 using Shared;
 using System.Text;
-using Amazon.Kinesis.Model;
+// using Amazon.Kinesis.Model;
 using System.Linq;
+using Akka.Streams.Kafka.Settings;
+using Akka.Util.Internal;
+using Confluent.Kafka;
 
 namespace KinesisSample
 {
@@ -31,10 +34,13 @@ namespace KinesisSample
     {
         private ActorSystem ClusterSystem;
         private readonly IServiceProvider _serviceProvider;
-
+        private static readonly AtomicCounter WorkerId = new AtomicCounter();
+        private int _partitions = 2;
+        private const string KafkaTopic = "fire-alerted";
+        
         private readonly IHostApplicationLifetime _applicationLifetime;
         private string _streamName;
-        Func<IAmazonKinesis> _clientFactory;
+       // Func<IAmazonKinesis> _clientFactory;
         private IMaterializer _materializer;
         public AkkaService(IServiceProvider serviceProvider, IHostApplicationLifetime appLifetime)
         {
@@ -58,8 +64,8 @@ namespace KinesisSample
             var injectedClusterConfigString = seeds.Aggregate("akka.cluster.seed-nodes = [", (current, seed) => current + @"""" + seed + @""", ");
             injectedClusterConfigString += "]";
             var config = clusterConfig
-                .WithFallback(ConfigurationFactory.ParseString(injectedClusterConfigString))
-                .BootstrapFromDocker();
+                .WithFallback(ConfigurationFactory.ParseString(injectedClusterConfigString));
+                //.BootstrapFromDocker();
             var bootstrap = BootstrapSetup.Create()
                .WithConfig(config) // load HOCON
                .WithActorRefProvider(ProviderSelection.Cluster.Instance); // launch Akka.Cluster
@@ -74,6 +80,7 @@ namespace KinesisSample
 
             // start ActorSystem
             ClusterSystem = ActorSystem.Create("FireAlert", actorSystemSetup);
+            _materializer = ClusterSystem.Materializer();
 
             // use the ServiceProvider ActorSystem Extension to start DI'd actors
             var sp = DependencyResolver.For(ClusterSystem);
@@ -84,26 +91,32 @@ namespace KinesisSample
                 _applicationLifetime.StopApplication();
             });
 
-            #region Kinesis
             var vrs = Environment.GetEnvironmentVariables();
-            _clientFactory = () => new AmazonKinesisClient(
-                new BasicAWSCredentials(vrs["accessKey"]?.ToString(), vrs["accessSecret"]?.ToString()),
-                RegionEndpoint.USEast1);
-            _materializer = ClusterSystem.Materializer();
-            _streamName = vrs["streamName"]?.ToString();
-            var describeRequest = new DescribeStreamRequest
-            {
-                StreamName = _streamName,
-            };
-            var describeResponse = await _clientFactory.Invoke().DescribeStreamAsync(describeRequest);
-            var shards = describeResponse.StreamDescription.Shards;
+           
             var aggregator = ClusterSystem.ActorOf(AggregatorActor.Prop(ClusterSystem));
-            foreach(var shard in shards)
+            
+            var consumerSettings = ConsumerSettings<Null, SensorData>.Create(ClusterSystem, null, null)
+                .WithBootstrapServers("localhost:19092")
+                .WithGroupId("group-1")
+                .WithProperty("security.protocol", "PLAINTEXT")
+                .WithProperty("session.timeout.ms", "6000");
+            var subscription = Subscriptions.Topics(KafkaTopic);
+            
+            for (var i = 0; i < _partitions; i++)
             {
-
-                ClusterSystem.ActorOf(Props.Create(() => new ShardActor(aggregator, shard, _clientFactory, _streamName, _materializer)));
+                var id = WorkerId.IncrementAndGet();
+                ClusterSystem.ActorOf(ConsumerWorkerActor.Props(ClusterSystem, aggregator, consumerSettings, subscription, _materializer), $"worker-{id}");
             }
-            #endregion
+            
+    
+        //    ClusterSystem.ActorOf(KafkaConsumerSupervisor<string, string>.Props(consumerSettings, subscription, 3), "kafka");
+
+            
+            // foreach(var shard in shards)
+            // {
+            //
+            //     ClusterSystem.ActorOf(Props.Create(() => new ShardActor(aggregator, shard, _clientFactory, _streamName, _materializer)));
+            // }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
